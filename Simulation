@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>F1 Aerodynamics Physics Simulator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: white;
+      text-align: center;
+    }
+    #container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #e10600;
+      margin-bottom: 5px;
+    }
+    .physics-formula {
+      background: #222;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    #controls {
+      background: #333;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .slider-container {
+      margin: 15px 0;
+    }
+    .value-display {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+    }
+    .force-label {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <h1>F1 CORNERING PHYSICS SIMULATOR</h1>
+    <div class="physics-formula">
+      Maximum Cornering Speed: v = √[μ(g + F<sub>downforce</sub>/m)r] | Downforce: F = ½ρv²C<sub>L</sub>A
+    </div>
+    <div id="sketch"></div>
+    <div id="controls">
+      <div class="slider-container">
+        <label>REAR WING ANGLE: <span id="angleValue">15</span>°</label>
+        <input type="range" id="wingAngle" min="0" max="45" value="15" style="width:100%">
+      </div>
+      <div class="value-display">
+        <div><span class="force-label">↓ DOWNFORCE:</span> <span id="downforceValue">3500</span> N</div>
+        <div><span class="force-label">← DRAG:</span> <span id="dragValue">500</span> N</div>
+      </div>
+      <div class="value-display">
+        <div><span class="force-label">SPEED:</span> <span id="speedValue">72</span> km/h</div>
+        <div><span class="force-label">MAX CORNER SPEED:</span> <span id="maxSpeedValue">72</span> km/h</div>
+      </div>
+      <div class="value-display">
+        <div><span class="force-label">GRIP MULTIPLIER:</span> <span id="gripValue">1.0</span>x</div>
+        <div><span class="force-label">LATERAL G-FORCE:</span> <span id="gforceValue">2.0</span>g</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // PHYSICS CONSTANTS FROM YOUR NOTES
+    const AIR_DENSITY = 1.225;    // kg/m³ (ρ)
+    const WING_AREA = 1.8;        // m² (A)
+    const CAR_MASS = 743;         // kg (m)
+    const TURN_RADIUS = 100;      // m (r)
+    const MU = 2.0;               // Coefficient of friction (μ)
+    const G = 9.81;               // m/s²
+    const BASE_LIFT_COEFF = 1.2;  // C<sub>L0</sub>
+    const LIFT_SLOPE = 8.0;       // k in C<sub>L</sub> = C<sub>L0</sub> + kα
+
+    // Simulation state
+    let wingAngle = 15;           // degrees
+    let carSpeed = 20;            // m/s (72 km/h)
+    let maxSpeed = 20;            // m/s
+    let downforce = 3500;         // N
+    let drag = 500;               // N
+
+    function setup() {
+      let canvas = createCanvas(700, 400);
+      canvas.parent('sketch');
+      
+      // Wing angle slider
+      select('#wingAngle').input(function() {
+        wingAngle = parseInt(this.value());
+        select('#angleValue').html(wingAngle);
+        updatePhysics();
+      });
+      
+      updatePhysics();
+    }
+
+    function updatePhysics() {
+      // Convert angle to radians (α)
+      const angleRad = radians(wingAngle);
+      
+      // 1. Calculate lift coefficient (C<sub>L</sub>) from your notes
+      const C_L = BASE_LIFT_COEFF + (LIFT_SLOPE * angleRad);
+      
+      // 2. Calculate downforce (F) using your formula
+      downforce = 0.5 * AIR_DENSITY * Math.pow(carSpeed, 2) * C_L * WING_AREA;
+      
+      // 3. Calculate drag (induced drag increases with C<sub>L</sub>²)
+      const C_D = 0.05 + 0.1 * Math.pow(C_L, 2);
+      drag = 0.5 * AIR_DENSITY * Math.pow(carSpeed, 2) * C_D * WING_AREA;
+      
+      // 4. Calculate maximum cornering speed from your notes
+      maxSpeed = Math.sqrt(MU * (G + (downforce/CAR_MASS)) * TURN_RADIUS);
+      
+      // 5. Calculate derived values
+      const gripMultiplier = 1 + (downforce / (CAR_MASS * G));
+      const gForce = Math.pow(carSpeed, 2) / (TURN_RADIUS * G);
+      
+      // Update displays
+      select('#downforceValue').html(Math.round(downforce));
+      select('#dragValue').html(Math.round(drag));
+      select('#speedValue').html(Math.round(carSpeed * 3.6));
+      select('#maxSpeedValue').html(Math.round(maxSpeed * 3.6));
+      select('#gripValue').html(gripMultiplier.toFixed(1));
+      select('#gforceValue').html(gForce.toFixed(1));
+    }
+
+    function draw() {
+      background(15);
+      drawTrack();
+      drawF1Car();
+      drawForceVectors();
+      drawSpeedometer();
+    }
+
+    function drawTrack() {
+      // Banked turn (radius = 100m)
+      noFill();
+      
+      // Track surface
+      stroke(80);
+      strokeWeight(80);
+      arc(width/2, height/2 + 100, 500, 500, PI, TWO_PI);
+      
+      // White lines
+      stroke(255);
+      strokeWeight(4);
+      arc(width/2, height/2 + 100, 440, 440, PI, TWO_PI);
+      arc(width/2, height/2 + 100, 560, 560, PI, TWO_PI);
+      
+      // Distance markers
+      for (let angle = PI; angle < TWO_PI; angle += PI/8) {
+        let x = width/2 + cos(angle) * 250;
+        let y = height/2 + 100 + sin(angle) * 250;
+        stroke(255, 150);
+        line(x, y, x + cos(angle) * 30, y + sin(angle) * 30);
+      }
+    }
+
+    function drawF1Car() {
+      push();
+      translate(width/2, height/2 + 50);
+      rotate(-PI/2); // Face into the turn
+      
+      // Modern F1 car body
+      noStroke();
+      fill(200, 0, 0); // Red
+      
+      // Main body
+      beginShape();
+      vertex(-60, 0);
+      vertex(-40, -25);
+      vertex(40, -25);
+      vertex(60, 0);
+      vertex(40, 25);
+      vertex(-40, 25);
+      endShape(CLOSE);
+      
+      // Nose cone
+      beginShape();
+      vertex(-60, 0);
+      vertex(-80, -15);
+      vertex(-80, 15);
+      endShape(CLOSE);
+      
+      // Rear wing (adjustable)
+      fill(30);
+      push();
+      translate(50, 0);
+      rotate(radians(-wingAngle));
+      rect(0, 0, 40, 10, 2);
+      triangle(40, 5, 55, 0, 55, 10);
+      pop();
+      
+      // Wheels
+      fill(20);
+      ellipse(-30, -20, 25, 15);
+      ellipse(-30, 20, 25, 15);
+      ellipse(30, -20, 25, 15);
+      ellipse(30, 20, 25, 15);
+      
+      // Driver halo
+      fill(60);
+      arc(0, -10, 30, 30, PI, TWO_PI);
+      
+      pop();
+    }
+
+    function drawForceVectors() {
+      let centerX = width/2;
+      let centerY = height/2 + 50;
+      
+      // Centripetal force (green)
+      drawArrow(centerX, centerY, 0, -80, color(0, 255, 0), 
+               `F<sub>centripetal</sub> = ${(CAR_MASS * Math.pow(carSpeed, 2) / TURN_RADIUS).toFixed(0)} N`);
+      
+      // Downforce (blue)
+      drawArrow(centerX, centerY + 60, 0, -40 - wingAngle * 0.8, color(0, 150, 255), 
+               `F<sub>downforce</sub> = ${Math.round(downforce)} N`);
+      
+      // Friction (yellow)
+      drawArrow(centerX - 80, centerY, 60, 0, color(255, 255, 0), 
+               `F<sub>friction</sub> = ${Math.round(MU * (CAR_MASS * G + downforce))} N`);
+    }
+
+    function drawSpeedometer() {
+      // Speed gauge
+      let speedKmh = carSpeed * 3.6;
+      let maxKmh = maxSpeed * 3.6;
+      let gaugeWidth = map(speedKmh, 0, maxKmh * 1.2, 0, width - 100);
+      
+      fill(40);
+      rect(50, height - 30, width - 100, 20);
+      fill(0, 150, 255);
+      rect(50, height - 30, gaugeWidth, 20);
+      
+      fill(255);
+      textSize(14);
+      textAlign(CENTER);
+      text(`${speedKmh.toFixed(0)} / ${maxKmh.toFixed(0)} km/h`, width/2, height - 15);
+    }
+
+    function drawArrow(x, y, dx, dy, col, label) {
+      push();
+      translate(x, y);
+      
+      // Arrow shaft
+      stroke(col);
+      strokeWeight(2);
+      line(0, 0, dx, dy);
+      
+      // Arrowhead
+      fill(col);
+      noStroke();
+      rotate(atan2(dy, dx));
+      triangle(0, 0, -12, -6, -12, 6);
+      
+      // Label (with HTML formatting)
+      if (label) {
+        noStroke();
+        fill(255);
+        textSize(12);
+        textAlign(CENTER);
+        drawingContext.fillText(label, dx * 1.3, dy * 1.3);
+      }
+      pop();
+    }
+  </script>
+</body>
+</html>
