@@ -1,0 +1,4 @@
+# F1-code-best-
+Physics Formulas present in simulation 
+- Downforce: `F = ½ρv²C_L A`
+- Max corner speed: `v = √[μ(g + F/m)r]`
