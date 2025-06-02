@@ -1,4 +1,34 @@
 # F1-code-best-
-Physics Formulas present in simulation 
+
+THIS SIMULATION WAS CONSTRUCTED WITH THE USAGE OF PHYSICS FORMULAS 
+
+Physics Formulas present in simulation :
 - Downforce: `F = ½ρv²C_L A`
 - Max corner speed: `v = √[μ(g + F/m)r]`
+
+DOWNFORCE VARIABLES MEANINGS = 
+½ρv² = (dynamic pressure of air hitting the wing):
+ρ (rho): Air density (~1.225 kg/m³ at sea level)
+v²: Speed squared (double speed = 4× stronger air pressure)
+C_L is the lift coefficient:
+Changes with wing angle (steep angle = higher C_L)
+
+
+MAX CORNER SPEED VARIABLES = 
+'V = velocity (max velocity in corner)
+
+ρ = (air density) represents how thick the air is (~1.225 kg/m³ at sea level)
+
+v² = (speed squared) shows why F1 cars grip exponentially better at high speeds (double speed = 4× downforce)
+
+C<sub>L</sub> = (lift coefficient) depends on wing angle—steeper angles increase downforce but also drag
+
+A (wing area) = reflects the size of aerodynamic surfaces
+
+The downforce then determines maximum cornering speed via v = √[μ(g + F/m)r], where:
+
+μ is tire grip (~2.0 for F1 slicks)
+F/m proves lighter cars benefit more from downforce
+r is the turn radius
+
+                  
